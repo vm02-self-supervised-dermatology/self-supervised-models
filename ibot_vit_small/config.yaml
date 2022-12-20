@@ -1,0 +1,93 @@
+batch_size: 32
+epochs: 200
+optim: "adamw"
+lr: 0.005 # GPU: 0.05 or 0.0005 (default)
+min_lr: 5e-4
+weight_decay: 0.04
+weight_decay_end: 0.4
+warmup_epochs: 10
+momentum_teacher: 0.996
+clip_grad: 3.0
+use_lr_scheduler: True
+use_wd_scheduler: True
+
+seed: 42
+fine_tune_from: None
+
+save_every_n_epochs: 10
+downstream_every_n_epochs: 100
+downstream_train_epochs: 10
+embed_vis_every_n_epochs: 10
+visualize_attention: True
+imgs_to_visualize: 5
+
+decryption: !include ../default/decryption.yaml
+
+model:
+    out_dim: 4096
+    emb_dim: 384 # tiny: 192, small: 384, base: 768
+    patch_out_dim: 4096
+    base_model: "vit_small"
+    model_type: "VIT"
+    use_bn_in_head: False
+    norm_last_layer: True
+    shared_head: True
+    shared_head_teacher: True
+    student:
+        patch_size: 16
+        drop_path_rate: 0.1
+        return_all_tokens: True
+        masked_im_modeling: True
+    teacher:
+        patch_size: 16
+        drop_path_rate: 0.1
+        return_all_tokens: True
+    eval:
+        n_last_blocks: 4
+        avgpool_patchtokens: False
+
+dataset:
+    train_path: "/raid/fabian/ssl-data/"
+    val_path: "/raid/fabian/downstream/fitzpatrick17k/"
+    loader:
+        num_workers: 75
+        drop_last: True
+        pin_memory: True
+    val_loader:
+        num_workers: 75
+        drop_last: True
+        pin_memory: True
+        shuffle: False
+    augmentations:
+        global_crops_scale: (0.7, 1.)
+        local_crops_scale: (0.05, 0.4) # maybe increase to 0.7
+        global_crops_number: 2
+        local_crops_number: 12
+    MIM:
+        pred_ratio: 0.3
+        pred_ratio_var: 0.0
+        pred_aspect_ratio: (0.3, 1/0.3)
+        pred_shape: "block"
+        pred_start_epoch: 0
+
+loss:
+    warmup_teacher_temp: 0.04
+    teacher_temp: 0.04
+    warmup_teacher_patch_temp: 0.04
+    teacher_patch_temp: 0.07
+    warmup_teacher_temp_epochs: 30
+    lambda1: 1.0
+    lambda2: 1.0
+
+optimizer:
+    freeze_last_layer: 1
+
+downstream:
+    lr: 0.001
+    pu_path: null
+    ham_path: null
+    fitz_path: null
+    isic_path: null
+    splitter:
+        num_workers: 75
+        val_size: 0.30
